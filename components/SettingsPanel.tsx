@@ -47,9 +47,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
   };
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-5 space-y-6">
+    <div className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-xl p-5 space-y-6">
       <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+        <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
           Aspect Ratio
         </label>
         <div className="grid grid-cols-3 gap-2">
@@ -61,8 +61,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
               className={`
                 px-3 py-2 text-sm rounded-lg border transition-all duration-200
                 ${config.aspectRatio === ratio 
-                  ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-900/20' 
-                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200'}
+                  ? 'bg-amber-500 border-amber-400 text-black shadow-md shadow-amber-500/20' 
+                  : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'}
                 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
               `}
             >
@@ -73,7 +73,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+        <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
           Resolution (Pro)
         </label>
         <div className="flex space-x-2">
@@ -85,8 +85,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
               className={`
                 flex-1 px-3 py-2 text-sm rounded-lg border transition-all duration-200
                 ${config.imageSize === size 
-                  ? 'bg-emerald-600 border-emerald-500 text-white shadow-md shadow-emerald-900/20' 
-                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200'}
+                  ? 'bg-amber-500 border-amber-400 text-black shadow-md shadow-amber-500/20' 
+                  : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'}
                 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
               `}
             >
@@ -97,7 +97,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+        <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
           Batch Size (Simultaneous)
         </label>
         <div className="grid grid-cols-4 gap-2">
@@ -109,8 +109,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
               className={`
                 px-3 py-2 text-sm rounded-lg border transition-all duration-200
                 ${config.batchSize === num 
-                  ? 'bg-purple-600 border-purple-500 text-white shadow-md shadow-purple-900/20' 
-                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200'}
+                  ? 'bg-amber-500 border-amber-400 text-black shadow-md shadow-amber-500/20' 
+                  : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'}
                 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
               `}
             >
@@ -118,13 +118,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
             </button>
           ))}
         </div>
-        <p className="text-xs text-slate-500 mt-2">
+        <p className="text-xs text-zinc-600 mt-2">
           Generating more images simultaneously uses more resources.
         </p>
       </div>
 
-      <div className="pt-6 border-t border-slate-700 space-y-4">
-        <label className="block text-xs font-bold text-indigo-400 uppercase tracking-widest">
+      <div className="pt-6 border-t border-zinc-800 space-y-4">
+        <label className="block text-xs font-bold text-amber-500 uppercase tracking-widest">
           API Management
         </label>
         
@@ -135,11 +135,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
               value={customKey}
               onChange={(e) => setCustomKey(e.target.value)}
               placeholder="Nhập API Key tùy chỉnh..."
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-xs text-slate-200 focus:ring-1 focus:ring-indigo-500 outline-none pr-10"
+              className="w-full bg-black border border-zinc-800 rounded-lg py-2 px-3 text-xs text-zinc-300 focus:ring-1 focus:ring-amber-500 outline-none pr-10"
             />
             <button 
               onClick={() => setShowKey(!showKey)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400"
             >
               {showKey ? (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
@@ -152,13 +152,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
           <div className="grid grid-cols-2 gap-2">
             <button 
               onClick={handleSaveKey}
-              className="py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded-lg transition-all"
+              className="py-2 bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-bold rounded-lg transition-all"
             >
               Lưu Key
             </button>
             <button 
               onClick={handleClearKey}
-              className="py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-[10px] font-bold rounded-lg transition-all"
+              className="py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px] font-bold rounded-lg transition-all"
             >
               Xóa Key
             </button>
@@ -167,7 +167,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
 
         <button 
           onClick={handleSelectDefault}
-          className="w-full py-2 border border-slate-700 hover:border-indigo-500 text-slate-400 hover:text-indigo-400 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-2"
+          className="w-full py-2 border border-zinc-800 hover:border-amber-500/50 text-zinc-500 hover:text-amber-500 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-2"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
           Chọn Key Mặc Định
