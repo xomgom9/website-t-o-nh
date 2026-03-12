@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface PinLockProps {
   onUnlock: () => void;
@@ -8,8 +8,10 @@ interface PinLockProps {
 export const PinLock: React.FC<PinLockProps> = ({ onUnlock, defaultPin }) => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handlePinChange = (value: string) => {
+    if (error) return;
     if (value.length <= 6 && /^\d*$/.test(value)) {
       setPin(value);
       if (value.length === 6) {
@@ -26,8 +28,34 @@ export const PinLock: React.FC<PinLockProps> = ({ onUnlock, defaultPin }) => {
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (error) return;
+      
+      if (e.key >= '0' && e.key <= '9') {
+        handlePinChange(pin + e.key);
+      } else if (e.key === 'Backspace') {
+        handlePinChange(pin.slice(0, -1));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pin, error]);
+
+  // Keep focus on the hidden input to trigger numeric keyboard on mobile if needed
+  useEffect(() => {
+    const interval = setInterval(() => {
+      inputRef.current?.focus();
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#020617] p-4 overflow-hidden">
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#020617] p-4 overflow-hidden"
+      onClick={() => inputRef.current?.focus()}
+    >
       {/* Background decoration */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full" />
@@ -59,10 +87,11 @@ export const PinLock: React.FC<PinLockProps> = ({ onUnlock, defaultPin }) => {
           </div>
 
           <input
+            ref={inputRef}
             type="tel"
             value={pin}
             onChange={(e) => handlePinChange(e.target.value)}
-            className="absolute inset-0 opacity-0 cursor-default"
+            className="absolute opacity-0 pointer-events-none"
             autoFocus
             maxLength={6}
           />
@@ -71,16 +100,18 @@ export const PinLock: React.FC<PinLockProps> = ({ onUnlock, defaultPin }) => {
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, 'del'].map((val, i) => (
               <button
                 key={i}
-                onClick={() => {
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
                   if (val === 'del') handlePinChange(pin.slice(0, -1));
                   else if (typeof val === 'number') handlePinChange(pin + val);
                 }}
-                disabled={val === ''}
+                disabled={val === '' || error}
                 className={`h-16 rounded-2xl flex items-center justify-center text-xl font-bold transition-all ${
                   val === '' ? 'opacity-0' : 
-                  val === 'del' ? 'bg-slate-800/50 text-slate-400 hover:bg-slate-800' : 
-                  'bg-slate-800/50 text-white hover:bg-slate-700 active:scale-90'
-                }`}
+                  val === 'del' ? 'bg-slate-800/50 text-slate-400 hover:bg-slate-800 active:bg-slate-700' : 
+                  'bg-slate-800/50 text-white hover:bg-slate-700 active:scale-90 active:bg-slate-600'
+                } ${error ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {val === 'del' ? (
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

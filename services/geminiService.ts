@@ -2,8 +2,22 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { GenerationConfig, RemixConfig } from "../types";
 
+const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
 export const checkApiKey = async (): Promise<boolean> => {
-  if (localStorage.getItem('custom_gemini_api_key')) return true;
+  const customKey = localStorage.getItem('custom_gemini_api_key');
+  const timestamp = localStorage.getItem('custom_gemini_api_key_ts');
+  
+  if (customKey && timestamp) {
+    const elapsed = Date.now() - parseInt(timestamp);
+    if (elapsed < SESSION_DURATION) {
+      return true;
+    } else {
+      localStorage.removeItem('custom_gemini_api_key');
+      localStorage.removeItem('custom_gemini_api_key_ts');
+    }
+  }
+
   const win = window as any;
   if (win.aistudio && win.aistudio.hasSelectedApiKey) {
     return await win.aistudio.hasSelectedApiKey();
@@ -20,16 +34,33 @@ export const promptForApiKey = async (): Promise<void> => {
 
 export const getActiveApiKey = (): string | null => {
   const customKey = localStorage.getItem('custom_gemini_api_key');
-  if (customKey) return customKey;
+  const timestamp = localStorage.getItem('custom_gemini_api_key_ts');
+
+  if (customKey && timestamp) {
+    const elapsed = Date.now() - parseInt(timestamp);
+    if (elapsed < SESSION_DURATION) {
+      return customKey;
+    }
+  }
+  
   return process.env.API_KEY || null;
 };
 
 export const setCustomApiKey = (key: string) => {
   localStorage.setItem('custom_gemini_api_key', key);
+  localStorage.setItem('custom_gemini_api_key_ts', Date.now().toString());
 };
 
 export const clearCustomApiKey = () => {
   localStorage.removeItem('custom_gemini_api_key');
+  localStorage.removeItem('custom_gemini_api_key_ts');
+};
+
+export const refreshApiKeySession = () => {
+  const customKey = localStorage.getItem('custom_gemini_api_key');
+  if (customKey) {
+    localStorage.setItem('custom_gemini_api_key_ts', Date.now().toString());
+  }
 };
 
 export const generateImageFromPrompt = async (
