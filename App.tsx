@@ -256,7 +256,12 @@ const App: React.FC = () => {
                         </div>
                     </div>
 
-                    <SettingsPanel config={activeWorkspace.config} onChange={(c) => updateActiveWorkspace({ config: c })} disabled={activeWorkspace.isGenerating} />
+                    <SettingsPanel 
+                        config={activeWorkspace.config} 
+                        onChange={(c) => updateActiveWorkspace({ config: c })} 
+                        onApiKeyChange={async () => setApiKeyReady(await checkApiKey())}
+                        disabled={activeWorkspace.isGenerating} 
+                    />
                 </div>
             </div>
         )}

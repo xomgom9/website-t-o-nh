@@ -3,6 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { GenerationConfig, RemixConfig } from "../types";
 
 export const checkApiKey = async (): Promise<boolean> => {
+  if (localStorage.getItem('custom_gemini_api_key')) return true;
   const win = window as any;
   if (win.aistudio && win.aistudio.hasSelectedApiKey) {
     return await win.aistudio.hasSelectedApiKey();
@@ -17,13 +18,27 @@ export const promptForApiKey = async (): Promise<void> => {
   }
 };
 
+export const getActiveApiKey = (): string | null => {
+  const customKey = localStorage.getItem('custom_gemini_api_key');
+  if (customKey) return customKey;
+  return process.env.API_KEY || null;
+};
+
+export const setCustomApiKey = (key: string) => {
+  localStorage.setItem('custom_gemini_api_key', key);
+};
+
+export const clearCustomApiKey = () => {
+  localStorage.removeItem('custom_gemini_api_key');
+};
+
 export const generateImageFromPrompt = async (
   prompt: string,
   config: GenerationConfig,
   isProductMode: boolean = false
 ): Promise<string> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) throw new Error("API Key not found");
+  const apiKey = getActiveApiKey();
+  if (!apiKey) throw new Error("API Key not found. Please set one in settings.");
 
   const ai = new GoogleGenAI({ apiKey });
   const model = "gemini-3-pro-image-preview";
@@ -73,7 +88,7 @@ export const smartReplaceProduct = async (
     productAsset: string, 
     instruction: string
 ): Promise<string> => {
-    const apiKey = process.env.API_KEY;
+    const apiKey = getActiveApiKey();
     if (!apiKey) throw new Error("API Key not found");
 
     const ai = new GoogleGenAI({ apiKey });
@@ -114,7 +129,7 @@ export const smartReplaceProduct = async (
 };
 
 export const describeImage = async (base64Image: string): Promise<string> => {
-    const apiKey = process.env.API_KEY;
+    const apiKey = getActiveApiKey();
     if (!apiKey) throw new Error("API Key not found");
     const ai = new GoogleGenAI({ apiKey });
     const model = 'gemini-3-flash-preview';
@@ -134,7 +149,7 @@ export const describeImage = async (base64Image: string): Promise<string> => {
 };
 
 export const generateRemix = async (referenceImage: string, userPrompt: string, remixConfig: RemixConfig, genConfig: GenerationConfig): Promise<string> => {
-    const apiKey = process.env.API_KEY;
+    const apiKey = getActiveApiKey();
     if (!apiKey) throw new Error("API Key not found");
     const ai = new GoogleGenAI({ apiKey });
     const model = 'gemini-3-pro-image-preview';
@@ -152,7 +167,7 @@ export const generateRemix = async (referenceImage: string, userPrompt: string, 
 };
 
 export const editGeneratedImage = async (base64Image: string, instruction: string): Promise<string> => {
-    const apiKey = process.env.API_KEY;
+    const apiKey = getActiveApiKey();
     const ai = new GoogleGenAI({ apiKey: apiKey! });
     const model = 'gemini-2.5-flash-image';
     const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
@@ -164,7 +179,7 @@ export const editGeneratedImage = async (base64Image: string, instruction: strin
 };
 
 export const generateMask = async (base64Image: string): Promise<string> => {
-  const apiKey = process.env.API_KEY;
+  const apiKey = getActiveApiKey();
   const ai = new GoogleGenAI({ apiKey: apiKey! });
   const model = 'gemini-2.5-flash-image';
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
