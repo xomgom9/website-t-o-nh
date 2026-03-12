@@ -45,7 +45,7 @@ export interface ImageFilters {
   blur: number;
 }
 
-export type RemixMode = 'text-to-image' | 'remix' | 'product-studio';
+export type RemixMode = 'text-to-image' | 'remix' | 'product-studio' | 'multi-angle';
 
 export interface RemixConfig {
   creativity: number;

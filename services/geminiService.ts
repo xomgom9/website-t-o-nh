@@ -209,6 +209,69 @@ export const editGeneratedImage = async (base64Image: string, instruction: strin
     return `data:image/png;base64,${response.candidates?.[0].content.parts.find(p => p.inlineData)?.inlineData?.data}`;
 };
 
+export const generateMultiAngleImages = async (
+  prompt: string,
+  config: GenerationConfig,
+  referenceImage?: string | null
+): Promise<string[]> => {
+  const apiKey = getActiveApiKey();
+  if (!apiKey) throw new Error("API Key not found.");
+
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-3-pro-image-preview";
+
+  const basePrompt = prompt || "the subject";
+
+  const angles = referenceImage 
+    ? [
+        { name: "Side View (45°)", prompt: `${basePrompt}, 45 degree angle view, perspective shot, matching the character in the reference image exactly, isolated on white background, studio lighting.` },
+        { name: "Back View (180°)", prompt: `${basePrompt}, back view, 180 degree rotation, matching the character in the reference image exactly, isolated on white background, studio lighting.` }
+      ]
+    : [
+        { name: "Front View (0°)", prompt: `${basePrompt}, front view, straight on shot, isolated on white background, studio lighting.` },
+        { name: "Side View (45°)", prompt: `${basePrompt}, 45 degree angle view, perspective shot, isolated on white background, studio lighting.` },
+        { name: "Back View (180°)", prompt: `${basePrompt}, back view, 180 degree rotation, isolated on white background, studio lighting.` }
+      ];
+
+  const results: string[] = [];
+  const cleanRef = referenceImage ? referenceImage.replace(/^data:image\/\w+;base64,/, "") : null;
+
+  // Generate sequentially to avoid rate limits and ensure order
+  for (const angle of angles) {
+    try {
+      const parts: any[] = [{ text: angle.prompt }];
+      if (cleanRef) {
+        parts.unshift({ inlineData: { mimeType: 'image/png', data: cleanRef } });
+      }
+
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: {
+          parts: parts,
+        },
+        config: {
+          imageConfig: {
+            aspectRatio: config.aspectRatio,
+            imageSize: config.imageSize,
+          },
+        },
+      });
+
+      if (response.candidates && response.candidates[0].content.parts) {
+        const part = response.candidates[0].content.parts.find(p => p.inlineData);
+        if (part?.inlineData?.data) {
+          results.push(`data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`);
+        }
+      }
+    } catch (error) {
+      console.error(`Error generating ${angle.name}:`, error);
+    }
+  }
+
+  if (results.length === 0) throw new Error("Failed to generate multi-angle images.");
+  return results;
+};
+
 export const generateMask = async (base64Image: string): Promise<string> => {
   const apiKey = getActiveApiKey();
   const ai = new GoogleGenAI({ apiKey: apiKey! });

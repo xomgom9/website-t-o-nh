@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AspectRatio, ImageSize, GenerationConfig, GeneratedImage, GenerationSession, RemixMode, RemixConfig, Workspace, WorkspaceStatus } from './types';
-import { checkApiKey, promptForApiKey, generateImageFromPrompt, describeImage, generateRemix, setCustomApiKey, clearCustomApiKey, refreshApiKeySession } from './services/geminiService';
+import { checkApiKey, promptForApiKey, generateImageFromPrompt, describeImage, generateRemix, setCustomApiKey, clearCustomApiKey, refreshApiKeySession, generateMultiAngleImages } from './services/geminiService';
 import { SettingsPanel } from './components/SettingsPanel';
 import { ImageDisplay } from './components/ImageDisplay';
 import { ImageEditor } from './components/ImageEditor';
@@ -155,8 +155,8 @@ const App: React.FC = () => {
     const targetWsId = activeWorkspaceId;
     const targetWs = activeWorkspace;
 
-    if (!targetWs.prompt.trim()) {
-      setError("Vui lòng nhập prompt.");
+    if (!targetWs.prompt.trim() && (targetWs.activeTab !== 'multi-angle' || !targetWs.remixImage)) {
+      setError("Vui lòng nhập prompt hoặc tải lên ảnh nhân vật.");
       return;
     }
     if (!apiKeyReady) {
@@ -176,42 +176,69 @@ const App: React.FC = () => {
     const successfulImages: GeneratedImage[] = [];
 
     try {
-      const promises = Array(targetWs.config.batchSize).fill(targetWs.prompt).map(async (taskPrompt, index) => {
-        try {
-          let imageUrl = "";
-          if (targetWs.activeTab === 'remix' && targetWs.remixImage) {
-              imageUrl = await generateRemix(targetWs.remixImage, taskPrompt, targetWs.remixConfig, targetWs.config);
-          } else {
-              imageUrl = await generateImageFromPrompt(taskPrompt, targetWs.config, targetWs.isProductMode);
+      if (targetWs.activeTab === 'multi-angle') {
+        const imageUrls = await generateMultiAngleImages(targetWs.prompt, targetWs.config, targetWs.remixImage);
+        
+        const newImages: GeneratedImage[] = imageUrls.map((url, index) => ({
+          id: `${Date.now()}-${index}`,
+          url: url,
+          prompt: targetWs.prompt,
+          config: { ...targetWs.config },
+          timestamp: Date.now(),
+          isProduct: targetWs.isProductMode
+        }));
+
+        setWorkspaces(prev => prev.map(w => {
+          if (w.id === targetWsId) {
+            const updatedBatch = [...w.generatedBatch, ...newImages];
+            return {
+              ...w,
+              generatedBatch: updatedBatch,
+              selectedImageId: newImages[0].id
+            };
           }
+          return w;
+        }));
+        successfulImages.push(...newImages);
+      } else {
+        const promises = Array(targetWs.config.batchSize).fill(targetWs.prompt).map(async (taskPrompt, index) => {
+          try {
+            let imageUrl = "";
+            if (targetWs.activeTab === 'remix' && targetWs.remixImage) {
+                imageUrl = await generateRemix(targetWs.remixImage, taskPrompt, targetWs.remixConfig, targetWs.config);
+            } else {
+                imageUrl = await generateImageFromPrompt(taskPrompt, targetWs.config, targetWs.isProductMode);
+            }
 
-          const newImg: GeneratedImage = {
-            id: `${Date.now()}-${index}`,
-            url: imageUrl,
-            prompt: taskPrompt,
-            config: { ...targetWs.config },
-            timestamp: Date.now(),
-            isProduct: targetWs.isProductMode
-          };
+            const newImg: GeneratedImage = {
+              id: `${Date.now()}-${index}`,
+              url: imageUrl,
+              prompt: taskPrompt,
+              config: { ...targetWs.config },
+              timestamp: Date.now(),
+              isProduct: targetWs.isProductMode
+            };
 
-          setWorkspaces(prev => prev.map(w => {
-              if (w.id === targetWsId) {
-                  const updatedBatch = [...w.generatedBatch, newImg];
-                  const updatedAssets = targetWs.isProductMode ? [...w.productAssets, newImg] : w.productAssets;
-                  return {
-                      ...w,
-                      generatedBatch: updatedBatch,
-                      productAssets: updatedAssets,
-                      selectedImageId: updatedBatch.length === 1 ? newImg.id : w.selectedImageId
-                  };
-              }
-              return w;
-          }));
-          successfulImages.push(newImg);
-        } catch (e) { console.error(e); }
-      });
+            setWorkspaces(prev => prev.map(w => {
+                if (w.id === targetWsId) {
+                    const updatedBatch = [...w.generatedBatch, newImg];
+                    const updatedAssets = targetWs.isProductMode ? [...w.productAssets, newImg] : w.productAssets;
+                    return {
+                        ...w,
+                        generatedBatch: updatedBatch,
+                        productAssets: updatedAssets,
+                        selectedImageId: updatedBatch.length === 1 ? newImg.id : w.selectedImageId
+                    };
+                }
+                return w;
+            }));
+            successfulImages.push(newImg);
+          } catch (e) { console.error(e); }
+        });
 
-      await Promise.allSettled(promises);
+        await Promise.allSettled(promises);
+      }
+      
       updateWorkspace(targetWsId, { isGenerating: false, status: 'success' });
       if (successfulImages.length > 0) {
           const newSession: GenerationSession = {
@@ -275,6 +302,16 @@ const App: React.FC = () => {
                }`}
              >
                Remix
+             </button>
+             <button 
+               onClick={() => updateActiveWorkspace({ activeTab: 'multi-angle' })} 
+               className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${
+                 activeWorkspace.activeTab === 'multi-angle' 
+                   ? `${getStatusColor(activeWorkspace.status)} text-black shadow-lg` 
+                   : 'text-zinc-500 hover:text-zinc-200'
+               }`}
+             >
+               Multi-Angle
              </button>
           </div>
           
@@ -427,7 +464,20 @@ const App: React.FC = () => {
             <div className="max-w-3xl mx-auto space-y-8">
                 {/* Image Display Section */}
                 <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 shadow-2xl relative">
-                    <ImageDisplay image={activeImage} isGenerating={activeWorkspace.isGenerating} onEdit={() => setIsEditing(true)} />
+                    {activeWorkspace.activeTab === 'multi-angle' && activeWorkspace.generatedBatch.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {activeWorkspace.generatedBatch.slice(-2).map((img) => (
+                                <div key={img.id} className="space-y-2">
+                                    <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1 px-2">
+                                        {img.prompt.includes('front') ? 'Góc Chính Diện' : img.prompt.includes('45') ? 'Góc 45 Độ' : 'Góc 180 Độ'}
+                                    </div>
+                                    <ImageDisplay image={img} isGenerating={activeWorkspace.isGenerating} onEdit={() => { updateActiveWorkspace({ selectedImageId: img.id }); setIsEditing(true); }} />
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <ImageDisplay image={activeImage} isGenerating={activeWorkspace.isGenerating} onEdit={() => setIsEditing(true)} />
+                    )}
                     
                     {(activeWorkspace.generatedBatch.length > 0 || activeWorkspace.isGenerating) && (
                         <div className="mt-6 flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
@@ -444,7 +494,7 @@ const App: React.FC = () => {
                 <div className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-xl p-6 space-y-4">
                     <div className="flex items-center justify-between">
                         <label className="text-sm font-bold text-amber-500 uppercase tracking-widest">
-                            {activeWorkspace.activeTab === 'remix' ? 'Remix Logic' : activeWorkspace.isProductMode ? 'Product Studio Mode' : 'Creative Prompt'}
+                            {activeWorkspace.activeTab === 'remix' ? 'Remix Logic' : activeWorkspace.activeTab === 'multi-angle' ? 'Multi-Angle Studio' : activeWorkspace.isProductMode ? 'Product Studio Mode' : 'Creative Prompt'}
                         </label>
                         
                         <div className="flex items-center gap-4">
@@ -458,15 +508,64 @@ const App: React.FC = () => {
                         </div>
                     </div>
 
-                    <textarea 
-                        value={activeWorkspace.prompt} 
-                        onChange={(e) => updateActiveWorkspace({ prompt: e.target.value })} 
-                        placeholder={activeWorkspace.isProductMode ? "Mô tả sản phẩm bạn muốn tạo (ví dụ: Đồng hồ sang trọng)..." : "Mô tả ý tưởng của bạn..."}
-                        className="w-full min-h-[100px] bg-black border border-zinc-800 rounded-lg p-4 text-zinc-200 focus:ring-2 focus:ring-amber-500 outline-none transition-all resize-none"
-                    />
+                    {activeWorkspace.activeTab !== 'multi-angle' && (
+                        <textarea 
+                            value={activeWorkspace.prompt} 
+                            onChange={(e) => updateActiveWorkspace({ prompt: e.target.value })} 
+                            placeholder={activeWorkspace.isProductMode ? "Mô tả sản phẩm bạn muốn tạo (ví dụ: Đồng hồ sang trọng)..." : "Mô tả ý tưởng của bạn..."}
+                            className="w-full min-h-[100px] bg-black border border-zinc-800 rounded-lg p-4 text-zinc-200 focus:ring-2 focus:ring-amber-500 outline-none transition-all resize-none"
+                        />
+                    )}
+
+                    {activeWorkspace.activeTab === 'multi-angle' && (
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Tải lên ảnh nhân vật (Tùy chọn)</label>
+                            <div className="flex items-center gap-4">
+                                <div 
+                                    onClick={() => {
+                                        const input = document.createElement('input');
+                                        input.type = 'file';
+                                        input.accept = 'image/*';
+                                        input.onchange = (e: any) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onload = (re) => updateActiveWorkspace({ remixImage: re.target?.result as string });
+                                                reader.readAsDataURL(file);
+                                            }
+                                        };
+                                        input.click();
+                                    }}
+                                    className={`w-24 h-24 rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${activeWorkspace.remixImage ? 'border-amber-500 bg-amber-500/5' : 'border-zinc-800 hover:border-zinc-700 bg-black'}`}
+                                >
+                                    {activeWorkspace.remixImage ? (
+                                        <img src={activeWorkspace.remixImage} className="w-full h-full object-contain rounded-md" />
+                                    ) : (
+                                        <>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-zinc-600 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                            <span className="text-[8px] text-zinc-600 font-bold uppercase">Upload</span>
+                                        </>
+                                    )}
+                                </div>
+                                {activeWorkspace.remixImage && (
+                                    <button 
+                                        onClick={() => updateActiveWorkspace({ remixImage: null })}
+                                        className="text-[10px] font-bold text-red-500 hover:text-red-400 uppercase tracking-widest"
+                                    >
+                                        Gỡ bỏ ảnh
+                                    </button>
+                                )}
+                                <div className="flex-1 text-[10px] text-zinc-500 italic">
+                                    {activeWorkspace.remixImage 
+                                        ? "Ảnh đã được tải lên. Hệ thống sẽ tạo góc 45° và 180° dựa trên nhân vật này." 
+                                        : "Nếu không tải ảnh, hệ thống sẽ tạo 3 góc (0°, 45°, 180°) từ prompt."}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     
                     <Button onClick={handleGenerate} isLoading={activeWorkspace.isGenerating} className="w-full h-12 font-bold uppercase tracking-widest">
-                        {activeWorkspace.isProductMode ? 'Tạo Sản Phẩm Studio' : 'Tạo Ảnh Sáng Tạo'}
+                        {activeWorkspace.activeTab === 'multi-angle' ? 'Tạo Đa Góc Độ' : activeWorkspace.isProductMode ? 'Tạo Sản Phẩm Studio' : 'Tạo Ảnh Sáng Tạo'}
                     </Button>
                 </div>
 
