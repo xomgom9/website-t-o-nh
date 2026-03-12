@@ -67,7 +67,7 @@ export const PinLock: React.FC<PinLockProps> = ({ onUnlock, defaultPin }) => {
           </svg>
         </div>
         
-        <h2 className="text-3xl font-black text-white mb-3 tracking-tight">Nano Studio</h2>
+        <h2 className="text-3xl font-black text-white mb-3 tracking-tight">Nano Banana Pro from Google</h2>
         <p className="text-slate-400 mb-10 font-medium">Vui lòng nhập mã PIN bảo mật</p>
         
         <div className="space-y-8">

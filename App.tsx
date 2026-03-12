@@ -252,7 +252,7 @@ const App: React.FC = () => {
             <div className="h-8 w-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">N</span>
             </div>
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">Nano Studio</h1>
+            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">Nano Banana Pro from Google</h1>
           </div>
           
           <div className="flex space-x-1 bg-slate-800/50 p-1 rounded-lg border border-slate-700">
