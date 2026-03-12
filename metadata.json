@@ -1,0 +1,5 @@
+{
+  "name": "Remix: Nano Banana Pro Studio",
+  "description": "A professional-grade AI image generation tool powered by Google\u0027s Gemini Nano Banana Pro (Gemini 3 Pro) model. Features high-resolution generation up to 4K.",
+  "requestFramePermissions": []
+}
