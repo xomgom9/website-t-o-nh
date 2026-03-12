@@ -177,12 +177,12 @@ const App: React.FC = () => {
 
     try {
       if (targetWs.activeTab === 'multi-angle') {
-        const imageUrls = await generateMultiAngleImages(targetWs.prompt, targetWs.config, targetWs.remixImage);
+        const multiAngleResults = await generateMultiAngleImages(targetWs.prompt, targetWs.config, targetWs.remixImage);
         
-        const newImages: GeneratedImage[] = imageUrls.map((url, index) => ({
+        const newImages: GeneratedImage[] = multiAngleResults.map((result, index) => ({
           id: `${Date.now()}-${index}`,
-          url: url,
-          prompt: targetWs.prompt,
+          url: result.url,
+          prompt: result.prompt,
           config: { ...targetWs.config },
           timestamp: Date.now(),
           isProduct: targetWs.isProductMode
@@ -257,6 +257,15 @@ const App: React.FC = () => {
   };
 
   const activeImage = activeWorkspace.generatedBatch.find(img => img.id === activeWorkspace.selectedImageId) || null;
+  
+  const previewImage = activeImage || (activeWorkspace.remixImage ? {
+    id: 'preview',
+    url: activeWorkspace.remixImage,
+    prompt: 'Original Character',
+    config: activeWorkspace.config,
+    timestamp: Date.now(),
+    isProduct: activeWorkspace.isProductMode
+  } : null);
 
   if (!isUnlocked) {
     return (
@@ -465,18 +474,53 @@ const App: React.FC = () => {
                 {/* Image Display Section */}
                 <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 shadow-2xl relative">
                     {activeWorkspace.activeTab === 'multi-angle' && activeWorkspace.generatedBatch.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {activeWorkspace.generatedBatch.slice(-2).map((img) => (
-                                <div key={img.id} className="space-y-2">
-                                    <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1 px-2">
-                                        {img.prompt.includes('front') ? 'Góc Chính Diện' : img.prompt.includes('45') ? 'Góc 45 Độ' : 'Góc 180 Độ'}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Left Column: Front and 45 Degree */}
+                            <div className="space-y-6">
+                                {(activeWorkspace.generatedBatch.find(img => img.prompt.toLowerCase().includes('front')) || activeWorkspace.generatedBatch[0]) && [activeWorkspace.generatedBatch.find(img => img.prompt.toLowerCase().includes('front')) || activeWorkspace.generatedBatch[0]].map((img) => (
+                                    <div key={img.id} className="space-y-2">
+                                        <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1 px-2 flex justify-between items-center">
+                                            <span>Góc Chính Diện</span>
+                                            <span className="text-[8px] opacity-50">Góc 0°</span>
+                                        </div>
+                                        <ImageDisplay image={img} isGenerating={activeWorkspace.isGenerating} onEdit={() => { updateActiveWorkspace({ selectedImageId: img.id }); setIsEditing(true); }} />
                                     </div>
-                                    <ImageDisplay image={img} isGenerating={activeWorkspace.isGenerating} onEdit={() => { updateActiveWorkspace({ selectedImageId: img.id }); setIsEditing(true); }} />
-                                </div>
-                            ))}
+                                ))}
+                                {(activeWorkspace.generatedBatch.find(img => img.prompt.includes('45')) || activeWorkspace.generatedBatch[1]) && [activeWorkspace.generatedBatch.find(img => img.prompt.includes('45')) || activeWorkspace.generatedBatch[1]].map((img) => (
+                                    <div key={img.id} className="space-y-2">
+                                        <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1 px-2 flex justify-between items-center">
+                                            <span>Góc Nghiêng</span>
+                                            <span className="text-[8px] opacity-50">Góc 45°</span>
+                                        </div>
+                                        <ImageDisplay image={img} isGenerating={activeWorkspace.isGenerating} onEdit={() => { updateActiveWorkspace({ selectedImageId: img.id }); setIsEditing(true); }} />
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Right Column: 90 and 180 Degrees */}
+                            <div className="space-y-6">
+                                {(activeWorkspace.generatedBatch.find(img => img.prompt.includes('90')) || activeWorkspace.generatedBatch[2]) && [activeWorkspace.generatedBatch.find(img => img.prompt.includes('90')) || activeWorkspace.generatedBatch[2]].map((img) => (
+                                    <div key={img.id} className="space-y-2">
+                                        <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1 px-2 flex justify-between items-center">
+                                            <span>Góc Ngang</span>
+                                            <span className="text-[8px] opacity-50">Góc 90°</span>
+                                        </div>
+                                        <ImageDisplay image={img} isGenerating={activeWorkspace.isGenerating} onEdit={() => { updateActiveWorkspace({ selectedImageId: img.id }); setIsEditing(true); }} />
+                                    </div>
+                                ))}
+                                {(activeWorkspace.generatedBatch.find(img => img.prompt.includes('180')) || activeWorkspace.generatedBatch[3]) && [activeWorkspace.generatedBatch.find(img => img.prompt.includes('180')) || activeWorkspace.generatedBatch[3]].map((img) => (
+                                    <div key={img.id} className="space-y-2">
+                                        <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1 px-2 flex justify-between items-center">
+                                            <span>Góc Sau</span>
+                                            <span className="text-[8px] opacity-50">Góc 180°</span>
+                                        </div>
+                                        <ImageDisplay image={img} isGenerating={activeWorkspace.isGenerating} onEdit={() => { updateActiveWorkspace({ selectedImageId: img.id }); setIsEditing(true); }} />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     ) : (
-                        <ImageDisplay image={activeImage} isGenerating={activeWorkspace.isGenerating} onEdit={() => setIsEditing(true)} />
+                        <ImageDisplay image={previewImage} isGenerating={activeWorkspace.isGenerating} onEdit={() => setIsEditing(true)} />
                     )}
                     
                     {(activeWorkspace.generatedBatch.length > 0 || activeWorkspace.isGenerating) && (

@@ -213,7 +213,7 @@ export const generateMultiAngleImages = async (
   prompt: string,
   config: GenerationConfig,
   referenceImage?: string | null
-): Promise<string[]> => {
+): Promise<{ url: string; prompt: string }[]> => {
   const apiKey = getActiveApiKey();
   if (!apiKey) throw new Error("API Key not found.");
 
@@ -222,18 +222,14 @@ export const generateMultiAngleImages = async (
 
   const basePrompt = prompt || "the subject";
 
-  const angles = referenceImage 
-    ? [
-        { name: "Side View (45°)", prompt: `${basePrompt}, 45 degree angle view, perspective shot, matching the character in the reference image exactly, isolated on white background, studio lighting.` },
-        { name: "Back View (180°)", prompt: `${basePrompt}, back view, 180 degree rotation, matching the character in the reference image exactly, isolated on white background, studio lighting.` }
-      ]
-    : [
-        { name: "Front View (0°)", prompt: `${basePrompt}, front view, straight on shot, isolated on white background, studio lighting.` },
-        { name: "Side View (45°)", prompt: `${basePrompt}, 45 degree angle view, perspective shot, isolated on white background, studio lighting.` },
-        { name: "Back View (180°)", prompt: `${basePrompt}, back view, 180 degree rotation, isolated on white background, studio lighting.` }
-      ];
+  const angles = [
+    { name: "Front View (0°)", prompt: `${basePrompt}, front view, ${referenceImage ? 'matching the character in the reference image exactly, ' : ''}isolated on white background, studio lighting.` },
+    { name: "Side View (45°)", prompt: `${basePrompt}, 45 degree angle view, perspective shot, ${referenceImage ? 'matching the character in the reference image exactly, ' : ''}isolated on white background, studio lighting.` },
+    { name: "Profile View (90°)", prompt: `${basePrompt}, 90 degree side profile view, ${referenceImage ? 'matching the character in the reference image exactly, ' : ''}isolated on white background, studio lighting.` },
+    { name: "Back View (180°)", prompt: `${basePrompt}, back view, 180 degree rotation, ${referenceImage ? 'matching the character in the reference image exactly, ' : ''}isolated on white background, studio lighting.` }
+  ];
 
-  const results: string[] = [];
+  const results: { url: string; prompt: string }[] = [];
   const cleanRef = referenceImage ? referenceImage.replace(/^data:image\/\w+;base64,/, "") : null;
 
   // Generate sequentially to avoid rate limits and ensure order
@@ -260,7 +256,10 @@ export const generateMultiAngleImages = async (
       if (response.candidates && response.candidates[0].content.parts) {
         const part = response.candidates[0].content.parts.find(p => p.inlineData);
         if (part?.inlineData?.data) {
-          results.push(`data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`);
+          results.push({
+            url: `data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`,
+            prompt: angle.prompt
+          });
         }
       }
     } catch (error) {
